@@ -49,7 +49,7 @@ def export_excel(data, data_short, data_property, data_count):
         data.to_excel(writer, startrow=1, sheet_name='Data_complete', index=False, header=False)
         data_short.to_excel(writer, startrow=1, sheet_name='Par rune et monstre', index=False, header=False)
         data_property.to_excel(writer, startrow=1, sheet_name='Par set', index=False, header=False)
-        data_count.to_excel(writer, startrow=0, sheet_name='Par set et propriété', index=False, header=False)
+        data_count.to_excel(writer, startrow=1, sheet_name='Par set et propriété', index=False, header=False)
         
         workbook = writer.book
         worksheet1 = writer.sheets['Data_complete']
