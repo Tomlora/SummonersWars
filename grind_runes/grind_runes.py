@@ -12,6 +12,7 @@ import plotly.express as px
 import ast
 import requests
 from pathlib import Path
+from tqdm import tqdm
 
 # fix plotly express et Visual Studio Code
 import plotly.io as pio
@@ -107,8 +108,8 @@ def swarfarm_monstres():
     data = r.json()
     df = pd.DataFrame(data)
 
-
-    for i in range(2,21):
+    print('Chargement de la Database Swarfarm...')
+    for i in tqdm(range(2,21)):
         url = f"https://swarfarm.com/api/v2/monsters/?page={i}"
         r = requests.get(url=url)
         data = r.json()
