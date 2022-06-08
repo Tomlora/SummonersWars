@@ -12,7 +12,13 @@ import plotly.express as px
 import ast
 import requests
 from pathlib import Path
-from tqdm import tqdm
+from os import system, name
+
+# Friendly
+#https://www.mathweb.fr/euclide/2022/02/11/mettre-des-couleurs-en-mode-console-a-un-texte-sous-python/
+# https://github.com/Textualize/rich/blob/master/README.fr.md
+from rich.console import Console
+from rich.progress import track
 
 # fix plotly express et Visual Studio Code
 import plotly.io as pio
@@ -33,7 +39,7 @@ def extraire_variables_imbriquees(df, colonne):
     df = pd.concat([df.drop([colonne], axis=1), df[colonne].apply(pd.Series)], axis=1)
     return df
 
-def export_excel(data, data_short, data_property, data_count):
+def export_excel(data, data_short, data_property, data_count, data_inventaire):
     
         # https://xlsxwriter.readthedocs.io/working_with_pandas.html
         
@@ -51,12 +57,14 @@ def export_excel(data, data_short, data_property, data_count):
         data_short.to_excel(writer, startrow=1, sheet_name='Par rune et monstre', index=False, header=False)
         data_property.to_excel(writer, startrow=1, sheet_name='Par set', index=False, header=False)
         data_count.to_excel(writer, startrow=1, sheet_name='Par set et propriété', index=False, header=False)
+        data_inventaire.to_excel(writer, startrow=1, sheet_name='Inventaire', index=False, header=False)
         
         workbook = writer.book
         worksheet1 = writer.sheets['Data_complete']
         worksheet2 = writer.sheets['Par rune et monstre']
         worksheet3 = writer.sheets['Par set']
         worksheet4 = writer.sheets['Par set et propriété']
+        worksheet5 = writer.sheets['Inventaire']
 
         # Gestion de la taille des colonnes
 
@@ -70,6 +78,8 @@ def export_excel(data, data_short, data_property, data_count):
                 worksheet3.set_column(i, i+1, 20, cell_format) # colonne, colonne, len_colonne, format colonne
         for i, col in enumerate(data_count.columns):
                 worksheet4.set_column(i, i+1, 20, cell_format) # colonne, colonne, len_colonne, format colonne
+        for i, col in enumerate(data_inventaire.columns):
+                worksheet5.set_column(i, i+1, 20, cell_format) # colonne, colonne, len_colonne, format colonne
                 
 
         # Ajout d'un graphique dans l'onglet 3
@@ -95,6 +105,7 @@ def export_excel(data, data_short, data_property, data_count):
         tableau(data_short, worksheet2)
         tableau(data_property, worksheet3)
         tableau(data_count, worksheet4)
+        tableau(data_inventaire, worksheet5)
             
         writer.save()
         
@@ -108,8 +119,7 @@ def swarfarm_monstres():
     data = r.json()
     df = pd.DataFrame(data)
 
-    print('Chargement de la Database Swarfarm...')
-    for i in tqdm(range(2,21)):
+    for i in track(range(2,21), description="Chargement de la Database Swarfarm..."):
         url = f"https://swarfarm.com/api/v2/monsters/?page={i}"
         r = requests.get(url=url)
         data = r.json()
@@ -137,6 +147,16 @@ maj_swarfarm = input("Création ou maj de la database Swarfarm ? (Oui/Non). Obli
 maj_swarfarm = maj_swarfarm.lower()
 
 
+# On clear la cmd
+
+ # for windows
+if name == 'nt':
+    system('cls')
+
+   # for mac and linux
+else:
+   system('clear')
+
 # In[115]:
 
 
@@ -156,7 +176,7 @@ data_json = json.load(f)
 player_runes = {}
 
 # Rune pas équipé
-for rune in data_json['runes']:
+for rune in track(data_json['runes'], description="Chargement des runes non-équipées..."):
     first_sub = 0
     first_sub_value = 0
     first_sub_grinded_value = 0
@@ -211,8 +231,9 @@ for rune in data_json['runes']:
                               second_sub_grinded_value, third_sub, third_sub_value, third_gemme_bool, third_sub_grinded_value, fourth_sub,
                               fourth_sub_value, fourth_gemme_bool, fourth_sub_grinded_value]
 
+
 # Rune équipée
-for unit in data_json['unit_list']:
+for unit in track(data_json['unit_list'], description="Chargement des runes équipées..."):
     for stat in unit:
         if stat == "runes":
             for rune in unit[stat]:
@@ -578,7 +599,7 @@ data_short = data[['rune_set', 'rune_slot', 'rune_equiped', 'efficiency', 'effic
 # In[141]:
 
 
-property = {1:'HP', 
+property_grind = {1:'HP', 
             2:'HP%', 
             3:'ATQ', 
             4:'ATQ%', 
@@ -589,8 +610,7 @@ property = {1:'HP',
 list_property_type = []
 list_property_count = []
 
-
-for propriete in property.values():
+for propriete in track(property_grind.values(), description="Identification des stats non-max..."):
     count = data['Grind_hero'].str.count(propriete).sum()
     
     list_property_type.append(propriete)
@@ -626,7 +646,7 @@ list_count = []
 list_propriete = []
 
 for type_rune in set.values():
-    for propriete in property.values():
+    for propriete in property_grind.values():
         data_type_rune = data[data['rune_set'] == type_rune]
         nb_rune = data[data['rune_set'] == type_rune].count().max()
         count = data_type_rune['Grind_hero'].str.count(propriete).sum()
@@ -666,10 +686,112 @@ fig = px.histogram(df_count, x='Set', y='Meules manquantes pour la stat max', co
 fig.write_image('resultat/Meules_manquantes par rune et propriété.png')
 
 
+# Inventaires
+
+# On va gérer l'inventaire maintenant...
+
+df_inventaire = pd.DataFrame.from_dict(data_json, orient='index').transpose()
+
+df_inventaire = df_inventaire['rune_craft_item_list']
+
+# id des crafts
+
+CRAFT_TYPE_MAP = {
+    1:'Enchant_gem',
+    2:'Grindstone',
+    3:'Gemme_immemoriale',
+    4:'Grindstone_immemoriale',
+    5:'Ancienne_gemme',
+    6:'Ancienne_grindstone',
+}
+
+# id des runes
+
+# on reprend le dict set
+
+# stat
+
+# on reprend property
+
+# id des qualités de runes
+COM2US_QUALITY_MAP = {
+        1: 'NORMAL',
+        2: 'MAGIQUE',
+        3: 'RARE',
+        4: 'HEROIQUE',
+        5: 'LGD',
+        # Original quality values
+        11: 'ANTIQUE_NORMAL',
+        12: 'ANTIQUE_MAGIQUE',
+        13: 'ANTIQUE_RARE',
+        14: 'ANTIQUE_HEROIQUE',
+        15: 'ANTIQUE_LGD',
+    }
+
+
+# Combien de gemmes/meules différentes ?
+
+nb_boucle = len(df_inventaire[0])
+
+for i in range(0, nb_boucle):
+    objet = str(df_inventaire[0][i]['craft_type_id'])
+    nb_chiffre = len(objet)
+        
+    type = int(df_inventaire[0][i]['craft_type'])
+    rune = int(objet[:nb_chiffre-4])
+    stat = int(objet[nb_chiffre-4:nb_chiffre-2])
+    quality = int(objet[nb_chiffre-2:nb_chiffre])
+    
+    df_inventaire[0][i]['type'] = CRAFT_TYPE_MAP[type]
+    df_inventaire[0][i]['rune'] = set[rune]
+    df_inventaire[0][i]['stat'] = property[stat]
+    df_inventaire[0][i]['quality'] = COM2US_QUALITY_MAP[quality]
+    
+#     Exemple découpage : item : 150814
+#     rune : 15
+#     stat : 8
+#     quality : 14
+
+df_inventaire = pd.DataFrame(df_inventaire)
+
+
+# découpe le dictionnaire imbriqué en un dict = une variable
+df_inventaire = extraire_variables_imbriquees(df_inventaire, 'rune_craft_item_list')
+
+# on refait pour sortir toutes les variables de chaque dict.... et on concatène pour n'avoir qu'un seul dataframe
+df_combine = extraire_variables_imbriquees(df_inventaire,0)
+df_combine = df_combine[['craft_item_id', 'wizard_id', 'craft_type', 'craft_type_id', 'sell_value', 'amount' ,'type', 'rune', 'stat', 'quality']]
+
+for i in track(range(1, len(df_inventaire.columns)), description="Chargement de l'inventaire..."):
+    df_combine2 = extraire_variables_imbriquees(df_inventaire, i)
+    df_combine2 = df_combine2[['craft_item_id', 'wizard_id', 'craft_type', 'craft_type_id', 'sell_value', 'amount' ,'type', 'rune', 'stat', 'quality']]
+    df_combine = pd.concat([df_combine,df_combine2])
+    
+# On retient les variables utiles
+
+df_inventaire = df_combine[['type', 'rune', 'stat', 'quality', 'amount']]
+
+# on sort values
+
+df_inventaire.sort_values(by=['rune'],  inplace=True)
+
+fig = px.histogram(df_inventaire, x="rune", y="amount", color='type', title="Inventaire")
+fig.write_image('resultat/Inventaire.png')
+
+
+
+
 # # Export
 
 # In[147]:
 
 
-export_excel(data, data_short, df_rune, df_count)
+export_excel(data, data_short, df_rune, df_count, df_inventaire)
 
+
+
+console = Console()
+
+console.print("Terminé ! Tu peux fermer cette cmd et consulter le dossier resultat", style="green")
+
+input()
