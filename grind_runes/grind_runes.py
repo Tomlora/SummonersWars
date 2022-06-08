@@ -17,6 +17,9 @@ from pathlib import Path
 import plotly.io as pio
 pio.renderers.default = "notebook_connected"
 
+# Supprime les Future Warnings sur les copies
+pd.options.mode.chained_assignment = None  # default='warn'
+
 
 
 
@@ -30,11 +33,23 @@ def extraire_variables_imbriquees(df, colonne):
     return df
 
 def export_excel(data, data_short, data_property, data_count):
-        writer = pd.ExcelWriter("resultat/fichier.xlsx")
-        data.to_excel(writer, startrow=0, sheet_name='Data_complete', index=True)
-        data_short.to_excel(writer, startrow=0, sheet_name='Par rune et monstre', index=True)
-        data_property.to_excel(writer, startrow=0, sheet_name='Par set', index=True)
-        data_count.to_excel(writer, startrow=0, sheet_name='Par set et propriété', index=False)
+    
+        # https://xlsxwriter.readthedocs.io/working_with_pandas.html
+        
+        # Pour travailler avec xlswriter et pendas et faire des tableaux, il faut reset l'index
+        data.reset_index(inplace=True)
+        data.rename(columns={'index' : 'Id_rune'}, inplace=True)
+        data_short.reset_index(inplace=True)
+        data_short.rename(columns={'index' : 'Set'}, inplace=True)
+        data_property.reset_index(inplace=True)
+        data_property.rename(columns={'index' : 'Set'}, inplace=True)
+        
+        
+        writer = pd.ExcelWriter("resultat/fichier.xlsx", engine='xlsxwriter')
+        data.to_excel(writer, startrow=1, sheet_name='Data_complete', index=False, header=False)
+        data_short.to_excel(writer, startrow=1, sheet_name='Par rune et monstre', index=False, header=False)
+        data_property.to_excel(writer, startrow=1, sheet_name='Par set', index=False, header=False)
+        data_count.to_excel(writer, startrow=0, sheet_name='Par set et propriété', index=False, header=False)
         
         workbook = writer.book
         worksheet1 = writer.sheets['Data_complete']
@@ -54,7 +69,32 @@ def export_excel(data, data_short, data_property, data_count):
                 worksheet3.set_column(i, i+1, 20, cell_format) # colonne, colonne, len_colonne, format colonne
         for i, col in enumerate(data_count.columns):
                 worksheet4.set_column(i, i+1, 20, cell_format) # colonne, colonne, len_colonne, format colonne
+                
 
+        # Ajout d'un graphique dans l'onglet 3
+
+        chart = workbook.add_chart({'type' : 'column'})
+        (max_row, max_col) = data_property.shape
+                       
+        chart.add_series({'categories' : ['Par set', 1, 0, max_row, 0 ], 'values' : ['Par set', 1, 1, max_row, 1 ]})
+            
+        worksheet3.insert_chart(1,3,chart)
+            
+
+        
+        # Tableau
+        
+        def tableau(data, worksheet):
+            column_settings = [{'header': column} for column in data.columns]
+            (max_row, max_col) = data.shape
+
+            worksheet.add_table(0, 0, max_row, max_col-1, {'columns': column_settings})
+            
+        tableau(data, worksheet1)
+        tableau(data_short, worksheet2)
+        tableau(data_property, worksheet3)
+        tableau(data_count, worksheet4)
+            
         writer.save()
         
 
@@ -92,7 +132,7 @@ def swarfarm_monstres():
 url_json = input('Lien du json ? ')
 f = open(url_json, encoding="utf8")
 
-maj_swarfarm = input("Création ou maj de la database Swarfarm ? Oui/Non ")
+maj_swarfarm = input("Création ou maj de la database Swarfarm ? (Oui/Non). Obligatoire à la première utilisation. ")
 maj_swarfarm = maj_swarfarm.lower()
 
 
