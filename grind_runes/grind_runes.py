@@ -11,6 +11,7 @@ import json
 import plotly.express as px
 import ast
 import requests
+from pathlib import Path
 
 # fix plotly express et Visual Studio Code
 import plotly.io as pio
@@ -88,8 +89,11 @@ def swarfarm_monstres():
 
 # In[114]:
 
-url_json = input('Lien du json ?')
+url_json = input('Lien du json ? ')
 f = open(url_json, encoding="utf8")
+
+maj_swarfarm = input("Création ou maj de la database Swarfarm ? Oui/Non ")
+maj_swarfarm = maj_swarfarm.lower()
 
 
 # In[115]:
@@ -102,7 +106,7 @@ data_json = json.load(f)
 # In[116]:
 
 
-data_json['runes'][0]
+# data_json['runes'][0]
 
 
 # In[117]:
@@ -233,7 +237,7 @@ data = pd.DataFrame.from_dict(player_runes, orient="index", columns=['rune_set',
                                                                      'innate_value','first_sub', 'first_sub_value', 'first_gemme_bool', 'first_sub_grinded_value', 'second_sub', 'second_sub_value', 'second_gemme_bool',
                               'second_sub_grinded_value', 'third_sub', 'third_sub_value', 'third_gemme_bool', 'third_sub_grinded_value', 'fourth_sub',
                               'fourth_sub_value', 'fourth_gemme_bool', 'fourth_sub_grinded_value'])
-data
+# data
 
 
 # # On supprime toute rune inférieure au level 11 ou 5 etoiles
@@ -254,7 +258,7 @@ set = {1:"Energy", 2:"Guard", 3:"Swift", 4:"Blade", 5:"Rage", 6:"Focus", 7:"Endu
         14:"Nemesis", 15:"Will", 16:"Shield", 17:"Revenge", 18:"Destroy", 19:"Fight", 20:"Determination", 21:"Enhance", 22:"Accuracy", 23:"Tolerance", 99:"Immemorial"}
 
 data['rune_set'] = data['rune_set'].map(set)
-data
+
 
 
 # # Efficiency
@@ -349,7 +353,7 @@ data['potentiel_max'] = data['efficiency_max_lgd'] - data['efficiency']
 # In[125]:
 
 
-data.loc[22149241043]
+# data.loc[22149241043]
 
 
 # # On supprime les variables inutiles
@@ -418,7 +422,7 @@ df_mobs = pd.DataFrame(list_mobs, columns=['id_unit', 'id_monstre'])
 # In[131]:
 
 
-df_mobs
+# df_mobs
 
 
 # Maintenant, on a besoin d'identifier les id.
@@ -432,10 +436,10 @@ df_mobs
 
 # In[132]:
 
-
-# swarfarm_monstres() # à activer/désactiver pour maj 
+if maj_swarfarm == "oui":
+    swarfarm_monstres() # à activer/désactiver pour maj 
 swarfarm = pd.read_excel('swarfarm.xlsx')
-swarfarm
+# swarfarm
 
 
 # In[133]:
@@ -448,7 +452,7 @@ df_mobs['name_monstre'] = df_mobs['id_monstre'].map(swarfarm.to_dict(orient="dic
 # In[134]:
 
 
-df_mobs
+# df_mobs
 
 
 # On peut faire le mapping...
@@ -558,6 +562,10 @@ for propriete in property.values():
 
 # In[142]:
 
+# Création du dossier
+
+path = Path("./resultat")
+path.mkdir(parents=True, exist_ok=True)
 
 # Graphique
 
@@ -606,7 +614,7 @@ df_count = df_count.rename(columns={0:'Set', 1:'Propriété', 2:'Meules manquant
 # In[145]:
 
 
-df_count
+# df_count
 
 
 # In[146]:
