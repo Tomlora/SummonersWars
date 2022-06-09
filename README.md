@@ -28,7 +28,7 @@ Exemple avec le second onglet :
 
 ### Graphiques
 
-Une fois l'application utilisée, elle génère 3 graphiques sur l'état d'amélioration des runes :
+Une fois l'application utilisée, elle génère plusieurs graphiques sur l'état d'amélioration des runes :
 
 <p align="center">
   <img width="700" height="500" src="https://github.com/Tomlora/SummonersWars/blob/main/grind_runes/resultat/Inventaire.png?raw=true">
