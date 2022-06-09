@@ -19,6 +19,7 @@ from os import system, name
 # https://github.com/Textualize/rich/blob/master/README.fr.md
 from rich.console import Console
 from rich.progress import track
+from rich.markdown import Markdown
 
 # fix plotly express et Visual Studio Code
 import plotly.io as pio
@@ -140,10 +141,41 @@ def swarfarm_monstres():
 
 # In[114]:
 
-url_json = input('Lien du json ? ')
+MARKDOWN = """
+# Application Grind_runes pour Summoners Wars
+# Version developpée par Tomlora
+
+
+## Utilisation :
+
+- Il faut tout d'abord un json, qu'il est possible d'obtenir via SWEX. L'application va demander le chemin vers ce fichier.
+- Enfin, l'application a besoin d'une base de données pour identifier les monstres. Pour cela, cela nécessite que l'application se connecte à Swarfarm. 
+Si vous souhaitez créer ou mettre à jour la base de données des monstres, il faudra répondre oui à la question. Sinon, il faudra écrire non.
+Le oui est **obligatoire à la première utilisation**, sinon vous n'avez pas la base de données nécessaire au fonctionnement de l'application
+
+## Resultats :
+
+L'application va analyser les runes et identifier les substats non-maximisées pour améliorer l'efficience d'une rune.
+
+Après analyse, un rapport est généré dans un dossier resultat sous format Excel avec 5 onglets :
+- Un onglet avec toute la data détaillée (stats des runes, équipée, efficience, stats maximales à grind  + les grind à utiliser (heroique ou légendaire)
+- Un second onglet qui résume toute la data
+- Un troisième onglet qui récapitule par set
+- Un quatrième onglet qui résume par set et propriété
+- L'inventaire actuel
+
+Cette analyse est complétée par quelques graphiques qui sont situés dans le même dossier.
+"""
+
+
+console_readme = Console()
+md = Markdown(MARKDOWN)
+console_readme.print(md)
+print('------------------------------------------------------')
+url_json = input('\nLien du json ? ')
 f = open(url_json, encoding="utf8")
 
-maj_swarfarm = input("Création ou maj de la database Swarfarm ? (Oui/Non). Obligatoire à la première utilisation. ")
+maj_swarfarm = input("\nCréation ou maj de la database Swarfarm ? (Oui/Non) ")
 maj_swarfarm = maj_swarfarm.lower()
 
 
@@ -162,15 +194,6 @@ else:
 
 # On charge le json
 data_json = json.load(f)
-
-
-# In[116]:
-
-
-# data_json['runes'][0]
-
-
-# In[117]:
 
 
 player_runes = {}
@@ -332,7 +355,7 @@ sub = {1: (375 * 5) * 2, # PV flat
        2: 8 * 5,  # PV%
        3: (20 * 5) * 2, #ATQ FLAT 
        4: 8 * 5, #ATQ%
-       5:( 20 * 5) * 1, #DEF FLAT 
+       5:(20 * 5) * 2, #DEF FLAT 
        6: 8 * 5,  # DEF %
        8: 6 * 5, # SPD
        9: 6 * 5, # CRIT
@@ -403,19 +426,7 @@ data['efficiency_max_lgd'] = np.where(data['innate_type'] != 0, round(((1+data['
 data['efficiency_max_hero'] = np.where(data['innate_type'] != 0, round(((1+data['innate_value'] / data['innate_value_max'] + data['first_sub_value_total_max_hero'] / data['first_sub_value_max'] + data['second_sub_value_total_max_hero'] / data['second_sub_value_max'] + data['third_sub_value_total_max_hero'] / data['third_sub_value_max'] + data['fourth_sub_value_total_max_hero'] / data['fourth_sub_value_max']) / 2.8)*100,2),
                               round(((1 + data['first_sub_value_total_max_hero'] / data['first_sub_value_max'] + data['second_sub_value_total_max_hero'] / data['second_sub_value_max'] + data['third_sub_value_total_max_hero'] / data['third_sub_value_max'] + data['fourth_sub_value_total_max_hero'] / data['fourth_sub_value_max']) / 2.8)*100,2))
 
-
-# In[124]:
-
-
 data['potentiel_max'] = data['efficiency_max_lgd'] - data['efficiency']
-
-
-# Exemple d'une rune
-
-# In[125]:
-
-
-# data.loc[22149241043]
 
 
 # # On supprime les variables inutiles
@@ -472,7 +483,7 @@ data_mobs = data_mobs['unit_list']
 # On va boucler et retenir ce qui nous intéresse..
 list_mobs = []
 data_mobs[0]
-for monstre in data_mobs[0]:
+for monstre in track(data_mobs[0], description="Identification des monstres..."):
     unit = monstre['unit_id']
     master_id = monstre['unit_master_id']
     list_mobs.append([unit, master_id])
@@ -509,13 +520,6 @@ swarfarm = pd.read_excel('swarfarm.xlsx')
 
 swarfarm = swarfarm[['com2us_id', 'name']].set_index('com2us_id')
 df_mobs['name_monstre'] = df_mobs['id_monstre'].map(swarfarm.to_dict(orient="dict")['name'])
-
-
-# In[134]:
-
-
-# df_mobs
-
 
 # On peut faire le mapping...
 
@@ -585,19 +589,13 @@ for key, value in dict.items():
 
 # # Clean du xl
 
-# In[140]:
-
 
 data.drop(['stars', 'level'], axis=1, inplace=True)
 
 data_short = data[['rune_set', 'rune_slot', 'rune_equiped', 'efficiency', 'efficiency_max_hero', 'efficiency_max_lgd', 'potentiel_max', 'Grind_lgd', 'Grind_hero']]
 
 
-# # Pour le fun
 # ## Meules manquantes par stat
-
-# In[141]:
-
 
 property_grind = {1:'HP', 
             2:'HP%', 
@@ -617,7 +615,7 @@ for propriete in track(property_grind.values(), description="Identification des 
     list_property_count.append(count)
     
     df_property = pd.DataFrame([list_property_type, list_property_count]).transpose()
-    df_property = df_property.rename(columns={0:'Propriété', 1:'Meules manquantes pour atteindre la stat max'})
+    df_property = df_property.rename(columns={0:'Propriété', 1:'Meules (hero) manquantes pour atteindre la stat max'})
     
 
 
@@ -630,8 +628,8 @@ path.mkdir(parents=True, exist_ok=True)
 
 # Graphique
 
-fig = px.histogram(df_property, x='Propriété', y='Meules manquantes pour atteindre la stat max', color='Propriété', title="Meules manquantes pour atteindre la stat max", text_auto=True)
-fig.write_image('resultaT/Meules_manquantes_par_stat.png')
+fig = px.histogram(df_property, x='Propriété', y='Meules (hero) manquantes pour atteindre la stat max', color='Propriété', title="Meules heroiques manquantes pour atteindre la stat max", text_auto=True)
+fig.write_image('resultat/Meules_manquantes_par_stat.png')
 
 
 # ## Meules manquantes par set
@@ -657,11 +655,7 @@ for type_rune in set.values():
         list_count.append(count)
         list_propriete.append(propriete)
         
-        
-        # if propriete == "HP":
-        #     print(f'Tu as {nb_rune} runes du set {type_rune}')
-        # print(f'{type_rune} : Il manque {count} heroique pour totalement grind au max la stat {propriete}')
-        
+               
         df_rune = pd.DataFrame.from_dict(dict_rune, orient='index', columns=['Nombre de runes'])
 
 
@@ -669,24 +663,15 @@ for type_rune in set.values():
 
 
 df_count = pd.DataFrame([list_type, list_propriete, list_count]).transpose()
-df_count = df_count.rename(columns={0:'Set', 1:'Propriété', 2:'Meules manquantes pour la stat max'})
-
-
-# In[145]:
-
-
-# df_count
-
-
-# In[146]:
+df_count = df_count.rename(columns={0:'Set', 1:'Propriété', 2:'Meules (hero) manquantes pour la stat max'})
 
 
 # Graphique
-fig = px.histogram(df_count, x='Set', y='Meules manquantes pour la stat max', color='Propriété', title="Meules manquantes pour la stat max", text_auto=True)
+fig = px.histogram(df_count, x='Set', y='Meules (hero) manquantes pour la stat max', color='Propriété', title="Meules heroiques manquantes pour la stat max", text_auto=True)
 fig.write_image('resultat/Meules_manquantes par rune et propriété.png')
 
 
-# Inventaires
+# Inventaire
 
 # On va gérer l'inventaire maintenant...
 
@@ -733,7 +718,7 @@ COM2US_QUALITY_MAP = {
 
 nb_boucle = len(df_inventaire[0])
 
-for i in range(0, nb_boucle):
+for i in track(range(0, nb_boucle), description="Déchiffrage des gemmes/runes..."):
     objet = str(df_inventaire[0][i]['craft_type_id'])
     nb_chiffre = len(objet)
         
@@ -762,7 +747,7 @@ df_inventaire = extraire_variables_imbriquees(df_inventaire, 'rune_craft_item_li
 df_combine = extraire_variables_imbriquees(df_inventaire,0)
 df_combine = df_combine[['craft_item_id', 'wizard_id', 'craft_type', 'craft_type_id', 'sell_value', 'amount' ,'type', 'rune', 'stat', 'quality']]
 
-for i in track(range(1, len(df_inventaire.columns)), description="Chargement de l'inventaire..."):
+for i in track(range(1, len(df_inventaire.columns)), description="Création de l'inventaire..."):
     df_combine2 = extraire_variables_imbriquees(df_inventaire, i)
     df_combine2 = df_combine2[['craft_item_id', 'wizard_id', 'craft_type', 'craft_type_id', 'sell_value', 'amount' ,'type', 'rune', 'stat', 'quality']]
     df_combine = pd.concat([df_combine,df_combine2])
@@ -792,6 +777,6 @@ export_excel(data, data_short, df_rune, df_count, df_inventaire)
 
 console = Console()
 
-console.print("Terminé ! Tu peux fermer cette cmd et consulter le dossier resultat", style="green")
+console.print("Terminé ! Tu peux fermer cette cmd et consulter le dossier resultat :smiley: ", style="green")
 
 input()
