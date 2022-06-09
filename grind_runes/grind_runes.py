@@ -579,12 +579,58 @@ dict = {'amelioration_first_grind' : 'first_sub',
         'amelioration_third_grind' : 'third_sub',
         'amelioration_fourth_grind' : 'fourth_sub'}
 
+# meule
+
 for key, value in dict.items():
     nom = key + "_lgd_value"
-    data['Grind_lgd'] = np.where(data[key + '_lgd_ameliorable?'] == 1, data['Grind_lgd'] +  data[value] + "(" + data[nom].astype('str') + ") \n", data['Grind_lgd'])
+    data['Grind_lgd'] = np.where(data[key + '_lgd_ameliorable?'] == 1, data['Grind_lgd'] +  "Meule : " + data[value] + "(" + data[nom].astype('str') + ") \n", data['Grind_lgd'])
     
     nom = key + "_hero_value"
-    data['Grind_hero'] = np.where(data[key + '_hero_ameliorable?'] == 1, data['Grind_hero'] +  data[value] + "(" + data[nom].astype('str') + ") \n", data['Grind_hero'])
+    data['Grind_hero'] = np.where(data[key + '_hero_ameliorable?'] == 1, data['Grind_hero'] +  "Meule : " + data[value] + "(" + data[nom].astype('str') + ") \n", data['Grind_hero'])
+    
+# gemme
+
+
+
+# sub des gemmes
+
+gemme_max_lgd = {'HP':580, 'HP%':13, 'ATQ':40, 'ATQ%':13, 'DEF':40, 'DEF%':13, 'SPD':10, 'CRIT':9, 'DCC':10, 'RES':11, 'ACC':11}
+gemme_max_hero = {'HP':420, 'HP%':11, 'ATQ':30, 'ATQ%':11, 'DEF':30, 'DEF%':11, 'SPD':8, 'CRIT':7, 'DCC':8, 'RES':9, 'ACC':9}
+
+
+
+# On les inclut au dataframe
+
+data['first_gemme_max_lgd'] = data['first_sub'].map(gemme_max_lgd)
+data['second_gemme_max_lgd'] = data['second_sub'].map(gemme_max_lgd)
+data['third_gemme_max_lgd'] = data['third_sub'].map(gemme_max_lgd)
+data['fourth_gemme_max_lgd'] = data['fourth_sub'].map(gemme_max_lgd)
+
+data['first_gemme_max_hero'] = data['first_sub'].map(gemme_max_hero)
+data['second_gemme_max_hero'] = data['second_sub'].map(gemme_max_hero)
+data['third_gemme_max_hero'] = data['third_sub'].map(gemme_max_hero)
+data['fourth_gemme_max_hero'] = data['fourth_sub'].map(gemme_max_hero)
+
+
+dict2 = {'first_gemme' : 'first_sub',
+        'second_gemme': 'second_sub',
+        'third_gemme': 'third_sub',
+        'fourth_gemme': 'fourth_sub'}
+
+
+# On fait le calcul : 
+
+for key, sub in track(dict2.items(), description="Identification des gemmes à grind...."):
+
+    condition = data[key + '_bool'] == 1 #si 1 -> gemme utilisée
+    calcul_lgd = data[key + '_max_lgd'] - data[sub + '_value'] # différence entre le max et la gemme
+    calcul_hero = data[key + '_max_hero'] - data[sub + '_value'] # différence entre le max et la gemme
+    condition_lgd =  calcul_lgd > 0 # s'il y a un écart, ce n'est pas la stat max
+    condition_hero = calcul_hero > 0
+
+    data['Grind_lgd'] = np.where(condition, np.where(condition_lgd, data['Grind_lgd'] + "Gemme : " + data[sub] + "(" + calcul_lgd.astype('str') + ")", data['Grind_lgd']), data['Grind_lgd'] )
+    data['Grind_hero'] = np.where(condition, np.where(condition_hero, data['Grind_hero'] + "Gemme : " + data[sub] + "(" + calcul_hero.astype('str') + ")", data['Grind_hero']), data['Grind_hero'] )  
+
 
 
 # # Clean du xl
@@ -597,25 +643,40 @@ data_short = data[['rune_set', 'rune_slot', 'rune_equiped', 'efficiency', 'effic
 
 # ## Meules manquantes par stat
 
-property_grind = {1:'HP', 
-            2:'HP%', 
-            3:'ATQ', 
-            4:'ATQ%', 
-            5:'DEF', 
-            6:'DEF%', 
-            8:"SPD"}
+property_grind = {1:'Meule : HP', 
+            2:'Meule : HP%', 
+            3:'Meule : ATQ', 
+            4:'Meule : ATQ%', 
+            5:'Meule : DEF', 
+            6:'Meule : DEF%', 
+            8:"Meule : SPD"}
 
 list_property_type = []
 list_property_count = []
 
-for propriete in track(property_grind.values(), description="Identification des stats non-max..."):
+for propriete in track(property_grind.values(), description="Comptage des meules nécessaires..."):
     count = data['Grind_hero'].str.count(propriete).sum()
     
     list_property_type.append(propriete)
     list_property_count.append(count)
     
-    df_property = pd.DataFrame([list_property_type, list_property_count]).transpose()
-    df_property = df_property.rename(columns={0:'Propriété', 1:'Meules (hero) manquantes pour atteindre la stat max'})
+property_grind_gemme = {1:'Gemme : HP', 
+            2:'Gemme : HP%', 
+            3:'Gemme : ATQ', 
+            4:'Gemme : ATQ%', 
+            5:'Gemme : DEF', 
+            6:'Gemme : DEF%', 
+            8:"Gemme : SPD"}
+
+for propriete in track(property_grind_gemme.values(), description="Comptage des gemmes nécessaires..."):
+    count = data['Grind_hero'].str.count(propriete).sum()
+    
+    list_property_type.append(propriete)
+    list_property_count.append(count)
+
+    
+df_property = pd.DataFrame([list_property_type, list_property_count]).transpose()
+df_property = df_property.rename(columns={0:'Propriété', 1:'Meules/Gemmes (hero) manquantes pour atteindre la stat max'})
     
 
 
@@ -628,8 +689,8 @@ path.mkdir(parents=True, exist_ok=True)
 
 # Graphique
 
-fig = px.histogram(df_property, x='Propriété', y='Meules (hero) manquantes pour atteindre la stat max', color='Propriété', title="Meules heroiques manquantes pour atteindre la stat max", text_auto=True)
-fig.write_image('resultat/Meules_manquantes_par_stat.png')
+fig = px.histogram(df_property, x='Propriété', y='Meules/Gemmes (hero) manquantes pour atteindre la stat max', color='Propriété', title="Meules heroiques manquantes pour atteindre la stat max", text_auto=True)
+fig.write_image('resultat/MeulesGemmes_manquantes_par_stat.png')
 
 
 # ## Meules manquantes par set
@@ -637,11 +698,12 @@ fig.write_image('resultat/Meules_manquantes_par_stat.png')
 # In[143]:
 
 
-pd.options.display.max_rows = 200  # retour à 5 pour éviter de surcharger la suite
 dict_rune = {}
 list_type = []
 list_count = []
 list_propriete = []
+list_propriete_gemmes = []
+list_count_gemmes = []
 
 for type_rune in set.values():
     for propriete in property_grind.values():
@@ -655,20 +717,35 @@ for type_rune in set.values():
         list_count.append(count)
         list_propriete.append(propriete)
         
-               
         df_rune = pd.DataFrame.from_dict(dict_rune, orient='index', columns=['Nombre de runes'])
+        
+    for propriete in property_grind_gemme.values():
+        data_type_rune = data[data['rune_set'] == type_rune]
+        nb_rune = data[data['rune_set'] == type_rune].count().max()
+        count = data_type_rune['Grind_hero'].str.count(propriete).sum()
+        
+       
+        # list_type.append(type_rune)
+        list_count_gemmes.append(count)
+        list_propriete_gemmes.append(propriete)
 
 
 # In[144]:
 
 
-df_count = pd.DataFrame([list_type, list_propriete, list_count]).transpose()
-df_count = df_count.rename(columns={0:'Set', 1:'Propriété', 2:'Meules (hero) manquantes pour la stat max'})
+df_count = pd.DataFrame([list_type, list_propriete, list_count, list_propriete_gemmes, list_count_gemmes]).transpose()
+df_count = df_count.rename(columns={0:'Set', 1:'Propriété Meules', 2:'Meules (hero) manquantes pour la stat max', 3: 'Propriété Gemmes', 4:'Gemmes (hero) manquantes'})
 
 
 # Graphique
-fig = px.histogram(df_count, x='Set', y='Meules (hero) manquantes pour la stat max', color='Propriété', title="Meules heroiques manquantes pour la stat max", text_auto=True)
+fig = px.histogram(df_count, x='Set', y='Meules (hero) manquantes pour la stat max', color='Propriété Meules', title="Meules heroiques manquantes pour la stat max", text_auto=True)
 fig.write_image('resultat/Meules_manquantes par rune et propriété.png')
+
+fig = px.histogram(df_count, x='Set', y='Gemmes (hero) manquantes', color='Propriété Gemmes', title="Gemmes heroiques manquantes pour la stat max", text_auto=True)
+fig.write_image('resultat/Gemmes_manquantes par rune et propriété.png')
+
+
+
 
 
 # Inventaire
