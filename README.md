@@ -23,7 +23,7 @@ L'application génère un "rapport" sous format Excel avec 5 onglets :
 Exemple avec le second onglet :
 
 <p align="center">
-  <img width="700" height="500" src="https://i.imgur.com/xBo6Tv8.png">
+  <img width="900" height="500" src="https://i.imgur.com/xBo6Tv8.png">
 </p>
 
 ### Graphiques
