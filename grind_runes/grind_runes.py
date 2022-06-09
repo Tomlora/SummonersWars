@@ -570,6 +570,8 @@ for key, value in dict.items():
 
 # Level
 data['Commentaires'] = np.where(data['level'] != 15, "A monter +15 \n", "")
+calcul_gemme = data['first_gemme_bool'] + data['second_gemme_bool'] + data['third_gemme_bool'] + data['fourth_gemme_bool']
+data['Commentaires'] = np.where(calcul_gemme == 0, data['Commentaires'] + "Pas de gemme utilisée", data['Commentaires'])
 data['Grind_lgd'] = ""
 data['Grind_hero'] = ""
 
@@ -638,7 +640,7 @@ for key, sub in track(dict2.items(), description="Identification des gemmes à g
 
 data.drop(['stars', 'level'], axis=1, inplace=True)
 
-data_short = data[['rune_set', 'rune_slot', 'rune_equiped', 'efficiency', 'efficiency_max_hero', 'efficiency_max_lgd', 'potentiel_max', 'Grind_lgd', 'Grind_hero']]
+data_short = data[['rune_set', 'rune_slot', 'rune_equiped', 'efficiency', 'efficiency_max_hero', 'efficiency_max_lgd', 'potentiel_max', 'Commentaires', 'Grind_lgd', 'Grind_hero']]
 
 
 # ## Meules manquantes par stat
