@@ -13,11 +13,6 @@ Inclus en ouvrant l'application.
 
 ### Fichiers Excel
 
-
-### Graphiques
-
-Une fois l'application utilisée, elle génère 3 graphiques sur l'état d'amélioration des runes :
-
 L'application génère un "rapport" sous format Excel avec 5 onglets :
 - Un onglet avec toute la data détaillée (stats des runes, équipée, efficience, stats maximales à grind  + les grind à utiliser (heroique ou légendaire)
 - Un second onglet qui résume toute la data
@@ -25,10 +20,19 @@ L'application génère un "rapport" sous format Excel avec 5 onglets :
 - Un quatrième onglet qui résume par set et propriété
 - L'inventaire actuel
 
+Exemple avec le second onglet :
+
+<p align="center">
+  <img width="700" height="500" src="https://i.imgur.com/xBo6Tv8.png">
+</p>
+
+### Graphiques
+
+Une fois l'application utilisée, elle génère 3 graphiques sur l'état d'amélioration des runes :
+
 <p align="center">
   <img width="700" height="500" src="https://github.com/Tomlora/SummonersWars/blob/main/grind_runes/resultat/Inventaire.png?raw=true">
 </p>
-
 
 <p align="center">
   <img width="700" height="500" src="https://github.com/Tomlora/SummonersWars/blob/main/grind_runes/resultat/Meules_manquantes%20par%20rune%20et%20propri%C3%A9t%C3%A9.png?raw=true">
